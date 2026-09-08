@@ -80,12 +80,42 @@ export const db = {
       state.papers[index] = { ...state.papers[index], ...data };
       await db.write(state);
       return state.papers[index];
+    },
+    async delete(id: string) {
+      const state = await db.read();
+      state.papers = state.papers || [];
+      const index = state.papers.findIndex(p => p.id === id);
+      if (index === -1) throw new Error('Paper not found');
+      state.papers.splice(index, 1);
+      
+      // Also remove from any collections
+      if (state.collections) {
+        state.collections.forEach(c => {
+          c.paperIds = c.paperIds.filter(pId => pId !== id);
+        });
+      }
+      
+      await db.write(state);
+      return true;
     }
   },
   collections: {
     async findMany() {
       const state = await db.read();
       return state.collections || [];
+    },
+    async create(collection: Omit<Collection, 'id' | 'paperIds' | 'lastUpdated'>) {
+      const state = await db.read();
+      const newCollection: Collection = {
+        ...collection,
+        id: crypto.randomUUID(),
+        paperIds: [],
+        lastUpdated: new Date().toISOString()
+      };
+      state.collections = state.collections || [];
+      state.collections.push(newCollection);
+      await db.write(state);
+      return newCollection;
     }
   },
   gaps: {

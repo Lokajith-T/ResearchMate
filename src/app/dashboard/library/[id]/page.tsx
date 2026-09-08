@@ -44,6 +44,7 @@ export default function PaperDetailsPage() {
   if (!paper) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Paper not found.</div>;
 
   const analysis = paper.analysis;
+  const hasValidAnalysis = analysis && analysis.problem;
 
   const EvidenceCard = ({ title, icon, data }: { title: string, icon: React.ReactNode, data?: { summary: string, evidence: string } | string }) => {
     if (!data) return null;
@@ -86,9 +87,10 @@ export default function PaperDetailsPage() {
           {paper.authors?.join(', ')} • {paper.year}
         </p>
         
-        {!analysis && !analyzing && (
+        {!hasValidAnalysis && !analyzing && (
           <div className="no-analysis">
-             <p>This paper hasn't been analyzed yet. Click Analyze to extract insights using Gemini AI.</p>
+             <p>This paper hasn't been analyzed yet, or the previous analysis was incomplete. Click Analyze to extract insights using AI.</p>
+             {analysis && analysis.error && <p style={{color: 'red', marginTop: '1rem'}}>Previous Error: {analysis.error}</p>}
           </div>
         )}
         {analyzing && (
@@ -98,7 +100,7 @@ export default function PaperDetailsPage() {
         )}
       </div>
 
-      {analysis && (
+      {hasValidAnalysis && (
         <div className="analysis-grid">
           <EvidenceCard title="Research Problem" icon={<FileText size={20} />} data={analysis.problem} />
           <EvidenceCard title="Objective" icon={<Target size={20} />} data={analysis.objective} />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, Filter, Plus, FileText, MoreVertical, Loader2 } from 'lucide-react';
+import { Search, Filter, Plus, FileText, MoreVertical, Loader2, Trash2, Edit2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LibraryPage() {
@@ -9,7 +9,18 @@ export default function LibraryPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!(e.target as Element).closest('.dropdown-container')) {
+        setActiveDropdown(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   const fetchPapers = async () => {
     try {
@@ -79,6 +90,43 @@ export default function LibraryPage() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this paper?')) return;
+    try {
+      const res = await fetch(`/api/papers/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        fetchPapers(); // refresh list
+      } else {
+        alert('Delete failed: ' + data.error);
+      }
+    } catch (err) {
+      alert('An error occurred during deletion.');
+    }
+  };
+
+  const handleRename = async (id: string, currentTitle: string) => {
+    setActiveDropdown(null);
+    const newTitle = prompt('Enter a new title for this paper:', currentTitle);
+    if (!newTitle || newTitle.trim() === '' || newTitle === currentTitle) return;
+
+    try {
+      const res = await fetch(`/api/papers/${id}`, { 
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newTitle.trim() })
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchPapers(); // refresh list
+      } else {
+        alert('Rename failed: ' + data.error);
+      }
+    } catch (err) {
+      alert('An error occurred while renaming.');
+    }
+  };
+
   return (
     <div className="library-view">
       <div className="library-header">
@@ -125,7 +173,24 @@ export default function LibraryPage() {
             <div key={paper.id} className="glass-panel paper-card">
               <div className="paper-card-header">
                 <div className="paper-type">PDF Document</div>
-                <button className="icon-btn"><MoreVertical size={18} /></button>
+                <div className="dropdown-container" style={{ position: 'relative' }}>
+                  <button 
+                    className="icon-btn" 
+                    onClick={() => setActiveDropdown(activeDropdown === paper.id ? null : paper.id)}
+                  >
+                    <MoreVertical size={18} />
+                  </button>
+                  {activeDropdown === paper.id && (
+                    <div className="dropdown-menu">
+                      <button className="dropdown-item" onClick={() => handleRename(paper.id, paper.title)}>
+                        <Edit2 size={16} /> Rename Paper
+                      </button>
+                      <button className="dropdown-item text-danger" onClick={() => handleDelete(paper.id)}>
+                        <Trash2 size={16} /> Delete Paper
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
               <h3 className="paper-title" title={paper.title}>{paper.title}</h3>
               <p className="paper-authors">{paper.authors?.join(', ')}</p>
@@ -180,6 +245,11 @@ export default function LibraryPage() {
         .analyzed-badge { font-size: 0.7rem; background: rgba(16, 185, 129, 0.1); color: var(--accent-success); padding: 0.15rem 0.4rem; border-radius: 4px; }
         .paper-actions { display: flex; gap: 0.75rem; margin-top: auto; }
         .flex-1 { flex: 1; }
+        .dropdown-menu { position: absolute; right: 0; top: 100%; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); padding: 0.5rem; z-index: 10; min-width: 160px; margin-top: 0.25rem; }
+        .dropdown-item { display: flex; align-items: center; gap: 0.5rem; width: 100%; padding: 0.5rem; border: none; background: transparent; color: var(--text-primary); cursor: pointer; border-radius: var(--radius-sm); font-size: 0.9rem; transition: background var(--transition-fast); }
+        .dropdown-item:hover { background: var(--bg-tertiary); }
+        .text-danger { color: #ef4444; }
+        .text-danger:hover { background: rgba(239, 68, 68, 0.1); }
       `}</style>
     </div>
   );

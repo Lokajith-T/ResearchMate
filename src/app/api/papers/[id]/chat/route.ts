@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { db } from '@/lib/db';
 
 export async function POST(
@@ -20,16 +19,7 @@ export async function POST(
       return NextResponse.json({ error: 'Paper not found or content unavailable' }, { status: 404 });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ 
-        answer: "This is a mock answer because GEMINI_API_KEY is not set.",
-        evidence: "Mock evidence snippet."
-      });
-    }
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Using local Ollama with qwen3:8b
 
     const contentToSearch = paper.textContent.substring(0, 50000); 
 
@@ -47,8 +37,25 @@ export async function POST(
       User Question: ${message}
     `;
 
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
+    const ollamaResponse = await fetch('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'qwen3:8b',
+        prompt: prompt,
+        stream: false,
+        options: {
+          num_ctx: 32768
+        }
+      }),
+    });
+
+    if (!ollamaResponse.ok) {
+      throw new Error(`Ollama API returned an error: ${ollamaResponse.statusText}`);
+    }
+
+    const result = await ollamaResponse.json();
+    const responseText = result.response;
     
     // Parse JSON
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);

@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { Layers, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 export default function ComparePage() {
   const [papers, setPapers] = useState<any[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [matrix, setMatrix] = useState<any[]>([]);
+  const [verdict, setVerdict] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -36,6 +38,7 @@ export default function ComparePage() {
       const data = await res.json();
       if (data.success) {
         setMatrix(data.comparisonMatrix);
+        setVerdict(data.bestPaperVerdict || '');
       } else {
         alert(data.error);
       }
@@ -91,6 +94,17 @@ export default function ComparePage() {
         </button>
       </div>
 
+      {verdict && (
+        <div className="verdict-panel glass-panel">
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)', marginBottom: '1rem' }}>
+            🏆 AI Best Paper Verdict
+          </h2>
+          <div className="verdict-content markdown-body" style={{ lineHeight: 1.6 }}>
+            <ReactMarkdown>{verdict}</ReactMarkdown>
+          </div>
+        </div>
+      )}
+
       {matrix.length > 0 && (
         <div className="comparison-table-container">
           <table className="comparison-table">
@@ -132,6 +146,16 @@ export default function ComparePage() {
         .comparison-table td { padding: 1rem; border-bottom: 1px solid var(--border-color); color: var(--text-primary); vertical-align: top; }
         .comparison-table tr:last-child td { border-bottom: none; }
         .highlight-cell { font-weight: 500; color: var(--accent-primary); }
+        .verdict-panel { background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border: 1px solid rgba(139, 92, 246, 0.2); padding: 2rem; margin-bottom: 2rem; border-radius: var(--radius-lg); }
+        
+        .markdown-body { font-size: 0.95rem; }
+        .markdown-body p { margin-bottom: 1rem; }
+        .markdown-body p:last-child { margin-bottom: 0; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 { margin-top: 1.5rem; margin-bottom: 0.75rem; font-weight: 600; color: var(--accent-primary); }
+        .markdown-body h1:first-child, .markdown-body h2:first-child, .markdown-body h3:first-child, .markdown-body h4:first-child { margin-top: 0; }
+        .markdown-body ul, .markdown-body ol { margin-left: 1.5rem; margin-bottom: 1rem; }
+        .markdown-body li { margin-bottom: 0.25rem; }
+        .markdown-body strong { font-weight: 600; color: var(--text-primary); }
       `}</style>
     </div>
   );

@@ -9,3 +9,18 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to fetch collections' }, { status: 500 });
   }
 }
+
+export async function POST(request: Request) {
+  try {
+    const { name, topic } = await request.json();
+    
+    if (!name || !topic) {
+      return NextResponse.json({ error: 'Name and topic are required' }, { status: 400 });
+    }
+
+    const newCollection = await db.collections.create({ name, topic });
+    return NextResponse.json({ success: true, collection: newCollection });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to create collection' }, { status: 500 });
+  }
+}

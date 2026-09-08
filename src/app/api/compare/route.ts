@@ -25,7 +25,38 @@ export async function POST(request: Request) {
       results: paper.analysis?.results?.summary || 'Not analyzed yet'
     }));
 
-    return NextResponse.json({ success: true, comparisonMatrix: matrix });
+    const matrixText = matrix.map(m => `Title: ${m.title}\nMethodology: ${m.methodology}\nResults: ${m.results}\nLimitations: ${m.limitations}`).join('\n\n---\n\n');
+
+    const prompt = `
+      You are an expert academic evaluator. Review the following summaries of research papers and decide which paper is the "best" overall.
+      Evaluate them based on: Methodological robustness, Significance of results, and Clarity of limitations.
+      
+      Provide a highly detailed, persuasive verdict (2-3 paragraphs). 
+      Format your response beautifully using markdown (bolding, bullet points).
+      Clearly declare a winner at the beginning.
+      
+      Papers to evaluate:
+      ${matrixText}
+    `;
+
+    const ollamaResponse = await fetch('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'qwen3:8b',
+        prompt: prompt,
+        stream: false,
+        options: { num_predict: 1024 }
+      }),
+    });
+
+    let bestPaperVerdict = "Verdict could not be generated.";
+    if (ollamaResponse.ok) {
+      const result = await ollamaResponse.json();
+      bestPaperVerdict = result.response;
+    }
+
+    return NextResponse.json({ success: true, comparisonMatrix: matrix, bestPaperVerdict });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to generate comparison' }, { status: 500 });
   }

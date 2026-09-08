@@ -1,7 +1,19 @@
+"use client";
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Home, Search, Library, Layers, FileText, LibraryBig, MessageSquare, Settings } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  const isActive = (path: string) => {
+    if (path === '/dashboard') {
+      return pathname === '/dashboard';
+    }
+    return pathname?.startsWith(path);
+  };
+
   return (
     <div className="dashboard-container">
       <aside className="sidebar">
@@ -9,15 +21,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Link href="/" className="logo gradient-text" style={{ fontSize: '1.25rem', fontWeight: 700 }}>ResearchMate</Link>
         </div>
         <nav className="sidebar-nav">
-          <Link href="/dashboard" className="nav-item active"><Home size={20} /> Dashboard</Link>
-          <Link href="/dashboard/search" className="nav-item"><Search size={20} /> Search Papers</Link>
-          <Link href="/dashboard/library" className="nav-item"><Library size={20} /> My Library</Link>
+          <Link href="/dashboard" className={`nav-item ${isActive('/dashboard') ? 'active' : ''}`}><Home size={20} /> Dashboard</Link>
+          <Link href="/dashboard/search" className={`nav-item ${isActive('/dashboard/search') ? 'active' : ''}`}><Search size={20} /> Search Papers</Link>
+          <Link href="/dashboard/library" className={`nav-item ${isActive('/dashboard/library') ? 'active' : ''}`}><Library size={20} /> My Library</Link>
           <div className="nav-section">Analysis</div>
-          <Link href="/dashboard/compare" className="nav-item"><Layers size={20} /> Compare</Link>
-          <Link href="/dashboard/gaps" className="nav-item"><FileText size={20} /> Gap Explorer</Link>
-          <Link href="/dashboard/collections" className="nav-item"><LibraryBig size={20} /> Collections</Link>
+          <Link href="/dashboard/compare" className={`nav-item ${isActive('/dashboard/compare') ? 'active' : ''}`}><Layers size={20} /> Compare</Link>
+          <Link href="/dashboard/gaps" className={`nav-item ${isActive('/dashboard/gaps') ? 'active' : ''}`}><FileText size={20} /> Gap Explorer</Link>
+          <Link href="/dashboard/collections" className={`nav-item ${isActive('/dashboard/collections') ? 'active' : ''}`}><LibraryBig size={20} /> Collections</Link>
           <div className="nav-section">AI Tools</div>
-          <Link href="/dashboard/chat" className="nav-item"><MessageSquare size={20} /> AI Assistant</Link>
+          <Link href="/dashboard/chat" className={`nav-item ${isActive('/dashboard/chat') ? 'active' : ''}`}><MessageSquare size={20} /> AI Assistant</Link>
         </nav>
       </aside>
       <main className="main-content">
